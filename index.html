@@ -1,0 +1,750 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>副业经营仪表盘</title>
+<style>
+  :root{
+    --bg:#f4f6fb; --panel:#ffffff; --ink:#1f2933; --sub:#64748b; --line:#e6ebf2;
+    --blue:#2563eb; --green:#16a34a; --red:#dc2626; --amber:#d97706; --teal:#0d9488;
+    --soft:#eef2f7;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;background:var(--bg);color:var(--ink);font-size:14px;line-height:1.5}
+  header{background:linear-gradient(120deg,#1e3a8a,#2563eb);color:#fff;padding:18px 24px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px}
+  header h1{font-size:20px;margin:0;font-weight:700;letter-spacing:.5px}
+  header .meta{font-size:12px;opacity:.85}
+  .topbar{display:flex;align-items:center;gap:14px;flex-wrap:wrap;padding:12px 24px;background:var(--panel);border-bottom:1px solid var(--line)}
+  .topbar label{font-size:13px;color:var(--sub)}
+  select,input,button,textarea{font-family:inherit;font-size:14px}
+  select,input,textarea{padding:7px 10px;border:1px solid var(--line);border-radius:8px;background:#fff;color:var(--ink)}
+  input[type=number]{width:130px}
+  input[type=month]{width:150px}
+  button{cursor:pointer;border:none;border-radius:8px;padding:8px 14px;font-weight:600;background:var(--blue);color:#fff;transition:.15s}
+  button:hover{filter:brightness(1.08)}
+  button.ghost{background:var(--soft);color:var(--ink)}
+  button.danger{background:var(--red)}
+  nav{display:flex;gap:4px;padding:0 24px;background:var(--panel);border-bottom:1px solid var(--line);flex-wrap:wrap}
+  nav button{background:none;color:var(--sub);border-radius:0;padding:12px 16px;font-weight:600;border-bottom:3px solid transparent}
+  nav button.active{color:var(--blue);border-bottom-color:var(--blue)}
+  main{padding:22px 24px;max-width:1100px;margin:0 auto}
+  .grid{display:grid;gap:16px}
+  .kpis{grid-template-columns:repeat(auto-fit,minmax(180px,1fr))}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:16px 18px;box-shadow:0 1px 3px rgba(15,23,42,.04)}
+  .kpi .t{color:var(--sub);font-size:13px}
+  .kpi .v{font-size:24px;font-weight:800;margin-top:6px}
+  .kpi .s{font-size:12px;color:var(--sub);margin-top:4px}
+  .v.green{color:var(--green)} .v.red{color:var(--red)} .v.blue{color:var(--blue)} .v.amber{color:var(--amber)}
+  h2{font-size:16px;margin:0 0 4px}
+  .sec-sub{color:var(--sub);font-size:13px;margin:0 0 14px}
+  table{width:100%;border-collapse:collapse;font-size:13px}
+  th,td{text-align:right;padding:9px 10px;border-bottom:1px solid var(--line);white-space:nowrap}
+  th:first-child,td:first-child{text-align:left}
+  th{color:var(--sub);font-weight:600;background:var(--soft);position:sticky;top:0}
+  tbody tr:hover{background:#fafcff}
+  .tag{display:inline-block;padding:2px 9px;border-radius:999px;font-size:12px;font-weight:600}
+  .tag.yes{background:#dcfce7;color:#15803d}
+  .tag.no{background:#fee2e2;color:#b91c1c}
+  .tag.pend{background:#fef3c7;color:#b45309}
+  .legend{display:flex;flex-wrap:wrap;gap:10px 18px;margin-top:10px;font-size:13px;color:var(--sub)}
+  .legend-item{display:flex;align-items:center;gap:6px}
+  .dot{width:11px;height:11px;border-radius:3px;display:inline-block}
+  .two{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+  @media(max-width:820px){.two{grid-template-columns:1fr}}
+  form .row{display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end;margin-bottom:12px}
+  form .field{display:flex;flex-direction:column;gap:5px}
+  form .field label{font-size:12px;color:var(--sub)}
+  .note{padding:10px 14px;background:#fffbeb;border:1px solid #fde68a;border-radius:10px;color:#92400e;font-size:13px}
+  .ok{color:var(--green);font-weight:600}
+  .hide{display:none}
+  .foot{text-align:center;color:var(--sub);font-size:12px;padding:24px}
+  .pill{font-size:12px;color:var(--sub)}
+  details{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:12px 16px}
+  details summary{cursor:pointer;font-weight:600}
+  details p,details li{color:var(--sub);font-size:13px}
+  .save-state{font-size:12px;color:var(--green)}
+  .banner{display:flex;align-items:center;gap:14px;flex-wrap:wrap;padding:11px 24px;background:#fff7ed;border-bottom:1px solid #fed7aa;color:#9a3412;font-size:13px;font-weight:600}
+  .banner button{background:var(--amber);color:#fff;padding:5px 12px;font-size:12px;margin-left:auto}
+  /* 自动备份开关 */
+  .switch{display:inline-flex;align-items:center;gap:10px;cursor:pointer;user-select:none;font-size:14px;font-weight:600;color:var(--ink)}
+  .switch input{position:absolute;opacity:0;width:0;height:0}
+  .switch .track{position:relative;width:42px;height:24px;background:#cbd5e1;border-radius:999px;transition:.2s;flex:0 0 auto}
+  .switch .thumb{position:absolute;top:3px;left:3px;width:18px;height:18px;background:#fff;border-radius:50%;transition:.2s;box-shadow:0 1px 2px rgba(0,0,0,.25)}
+  .switch input:checked + .track{background:var(--green)}
+  .switch input:checked + .track .thumb{transform:translateX(18px)}
+  .switch input:focus-visible + .track{outline:2px solid var(--blue);outline-offset:2px}
+  .auto-backup-box{margin-top:14px;padding:12px 14px;border:1px dashed var(--line);border-radius:10px;background:var(--soft);display:flex;flex-direction:column;gap:6px}
+</style>
+</head>
+<body>
+<header>
+  <div>
+    <h1>副业经营仪表盘</h1>
+    <div class="meta">多项目 · 多账户 · 分成比例 · 取现追踪　|　数据仅存于本机浏览器，可导出备份</div>
+  </div>
+  <div class="meta" id="lastSave"></div>
+</header>
+
+<div id="seedBanner" class="banner" style="display:none"></div>
+
+<div class="topbar">
+  <label>查看月份</label>
+  <select id="monthFilter"></select>
+  <span class="pill" id="recCount"></span>
+</div>
+
+<nav id="nav">
+  <button data-tab="overview" class="active">总览</button>
+  <button data-tab="project">按项目</button>
+  <button data-tab="account">按账户</button>
+  <button data-tab="trend">趋势</button>
+  <button data-tab="entry">数据录入</button>
+  <button data-tab="manage">副业管理</button>
+  <button data-tab="backup">备份</button>
+  <button data-tab="help">使用说明</button>
+</nav>
+
+<main>
+  <!-- 总览 -->
+  <section id="tab-overview">
+    <div class="grid kpis" id="kpis"></div>
+    <div class="two" style="margin-top:16px">
+      <div class="card"><h2>我的利润 · 按账户构成</h2><p class="sec-sub">累计我的利润在各银行账户的分布</p><div id="ovDonut"></div></div>
+      <div class="card"><h2>各副业累计我的利润</h2><p class="sec-sub">单位：元</p><div id="ovBars"></div></div>
+    </div>
+    <div class="card" style="margin-top:16px"><h2>账户资金汇总</h2><p class="sec-sub">应得＝该账户下所有副业累计我的利润；留存＝已入账−取现</p><div id="ovAcctTable"></div></div>
+  </section>
+
+  <!-- 按项目 -->
+  <section id="tab-project" class="hide">
+    <div class="card">
+      <h2>副业经营明细</h2>
+      <p class="sec-sub" id="projSub"></p>
+      <div id="projTable"></div>
+      <div id="projBars" style="margin-top:14px"></div>
+    </div>
+    <div class="card" style="margin-top:16px">
+      <h2>单副业月度趋势对比</h2>
+      <p class="sec-sub">横轴为各真实月份；对比同一副业在每个月之间的 收入 / 成本 / 利润 / 我的利润 变化趋势。</p>
+      <div class="row" style="display:flex;gap:12px;align-items:flex-end;margin-bottom:12px">
+        <label class="field">
+          <span style="font-size:12px;color:var(--sub)">选择副业</span>
+          <select id="projTrendSel"></select>
+        </label>
+      </div>
+      <div id="projTrendChart"></div>
+    </div>
+  </section>
+
+  <!-- 按账户 -->
+  <section id="tab-account" class="hide">
+    <div class="card">
+      <h2>各账户收支与取现</h2>
+      <p class="sec-sub">累计视角。取现从 2026-06 起记录；历史取现未纳入。</p>
+      <div id="acctTable"></div>
+      <div id="acctBars" style="margin-top:14px"></div>
+    </div>
+  </section>
+
+  <!-- 趋势 -->
+  <section id="tab-trend" class="hide">
+    <div class="card">
+      <h2>每月我的利润趋势</h2>
+      <p class="sec-sub">仅含真实月份（不含历史累计基数）</p>
+      <div id="trendLine"></div>
+    </div>
+    <div class="card" style="margin-top:16px">
+      <h2>每月取现金额</h2>
+      <p class="sec-sub">按账户取现合计</p>
+      <div id="wdBars"></div>
+    </div>
+  </section>
+
+  <!-- 录入 -->
+  <section id="tab-entry" class="hide">
+    <div class="card">
+      <h2>① 录入月度经营</h2>
+      <p class="sec-sub">填收入与成本，我的利润＝（收入−成本）× 分成比例，自动计算。</p>
+      <form id="recForm">
+        <div class="row">
+          <div class="field"><label>月份</label><input type="month" id="recMonth" required></div>
+          <div class="field"><label>副业</label><select id="recProject"></select></div>
+          <div class="field"><label>收入(元)</label><input type="number" id="recRev" step="0.01" required></div>
+          <div class="field"><label>成本(元)</label><input type="number" id="recCost" step="0.01" required></div>
+          <div class="field"><label>备注</label><input type="text" id="recNote" placeholder="可选"></div>
+          <button type="submit">保存记录</button>
+        </div>
+      </form>
+      <div id="recMsg" class="pill"></div>
+      <div id="recList" style="margin-top:10px"></div>
+    </div>
+
+    <div class="card" style="margin-top:16px">
+      <h2>② 录入取现（现金取出）</h2>
+      <p class="sec-sub">记录从某个账户取了多少现金，便于核对银行留存。</p>
+      <form id="wdForm">
+        <div class="row">
+          <div class="field"><label>月份</label><input type="month" id="wdMonth" required></div>
+          <div class="field"><label>账户</label><select id="wdAccount"></select></div>
+          <div class="field"><label>取现金额(元)</label><input type="number" id="wdAmt" step="0.01" required></div>
+          <div class="field"><label>备注</label><input type="text" id="wdNote" placeholder="可选"></div>
+          <button type="submit">保存取现</button>
+        </div>
+      </form>
+      <div id="wdMsg" class="pill"></div>
+      <div id="wdList" style="margin-top:10px"></div>
+    </div>
+  </section>
+
+  <!-- 副业管理 -->
+  <section id="tab-manage" class="hide">
+    <div class="card">
+      <h2>副业 / 分成 / 账户 设置</h2>
+      <p class="sec-sub">修改分成比例、归属账户后点「保存修改」。新增副业可填新账户。</p>
+      <div id="manageTable"></div>
+      <div style="margin-top:12px"><button id="saveProj">保存修改</button></div>
+    </div>
+    <div class="card" style="margin-top:16px">
+      <h2>新增副业</h2>
+      <form id="newProjForm">
+        <div class="row">
+          <div class="field"><label>副业名称</label><input type="text" id="npName" required></div>
+          <div class="field"><label>分成比例(%)</label><input type="number" id="npRatio" step="0.1" required></div>
+          <div class="field"><label>银行账户</label><input type="text" id="npAccount" required></div>
+          <div class="field"><label>归属</label><input type="text" id="npOwner" value="个人"></div>
+          <div class="field"><label>备注</label><input type="text" id="npNote"></div>
+          <button type="submit">添加</button>
+        </div>
+      </form>
+    </div>
+  </section>
+
+  <!-- 备份 -->
+  <section id="tab-backup" class="hide">
+    <div class="card">
+      <h2>数据备份与恢复</h2>
+      <p class="sec-sub">建议每月导出一次 JSON 备份，换电脑时导入即可。</p>
+      <div class="row">
+        <button id="btnExportJson">导出全部数据(JSON)</button>
+        <button id="btnExportCsv">导出月度记录(CSV)</button>
+        <label class="field"><span style="font-size:12px;color:var(--sub)">导入JSON</span><input type="file" id="fileJson" accept=".json"></label>
+        <button class="danger" id="btnReset">恢复初始示例数据</button>
+      </div>
+      <div id="backupMsg" class="pill"></div>
+      <div class="auto-backup-box">
+        <label class="switch">
+          <input type="checkbox" id="autoBackupToggle">
+          <span class="track"><span class="thumb"></span></span>
+          <span>每次改动后自动下载备份(JSON)</span>
+        </label>
+        <span class="sec-sub" style="margin:0">开启后，每次保存 / 删除 / 导入都会自动往下载目录存一份带时间戳的备份，避免数据丢失。开关状态会被记住。</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- 说明 -->
+  <section id="tab-help" class="hide">
+    <div class="card">
+      <h2>怎么用</h2>
+      <details open>
+        <summary>核心概念</summary>
+        <ul>
+          <li><b>我的利润</b> ＝（收入 − 成本）× 分成比例。每个副业比例不同（25%~75%）。</li>
+          <li><b>应得 / 已入账</b>：在该工具里登记即视为已入账，所以「应得」就是「已入账」。</li>
+          <li><b>取现</b>：从账户取出的现金，单独在「录入 → ②」登记。</li>
+          <li><b>银行留存</b> ＝ 应得 − 取现；<b>在手现金</b> ＝ 取现合计。</li>
+        </ul>
+      </details>
+      <details>
+        <summary>预置了什么</summary>
+        <p>《副业财务管理-历史数据.xlsx》的累计（截至2026.05）作为<b>期初基数</b>；《副业财务管理-2026年6月.xlsx》作为第一条月度记录（2026-06）。取现历史未记录，需你从 2026-06 起自行补登。</p>
+      </details>
+      <details>
+        <summary>日常操作</summary>
+        <ul>
+          <li>每月底：在「数据录入 → ①」逐个项目填收入、成本，保存。</li>
+          <li>每次取现金：在「数据录入 → ②」登记月份、账户、金额。</li>
+          <li>随时：用顶部「查看月份」切换，或在各页签看可视化。</li>
+          <li>换设备/月底：在「备份」导出 JSON；新电脑导入即可。</li>
+        </ul>
+      </details>
+      <div class="note" style="margin-top:12px">数据保存在本机浏览器的 localStorage。若清空浏览器数据会丢失，请定期导出 JSON 备份。</div>
+    </div>
+  </section>
+
+  <div class="foot">副业经营仪表盘 · 单文件离线工具 · 由小八为 Leo 构建</div>
+</main>
+
+<script>
+const SEED = {"version": 3, "autoBackup": true, "meta": {"baselineLabel": "历史累计(截至2026.05)", "note": "历史累计来自《副业财务管理-历史数据.xlsx》（累计至2026.05）；2026-06 来自《副业财务管理-2026年6月.xlsx》。取现数据需从2026-06起自行记录。", "createdAt": "2026-07-14"}, "projects": [{"name": "绿植", "ratio": 0.75, "account": "I银行", "owner": "个人", "note": "我拿利润的75%"}, {"name": "消杀", "ratio": 0.75, "account": "I银行", "owner": "个人", "note": "我拿利润的75%"}, {"name": "保洁人力", "ratio": 0.75, "account": "I银行", "owner": "个人", "note": "我拿利润的75%"}, {"name": "消防员", "ratio": 0.75, "account": "I银行", "owner": "个人", "note": "我拿利润的75%"}, {"name": "F1", "ratio": 0.25, "account": "R银行", "owner": "个人", "note": "我拿利润的25%"}, {"name": "MK现金", "ratio": 0.75, "account": "M银行", "owner": "个人", "note": "我拿利润的75%"}, {"name": "人员工资挂靠", "ratio": 0.5, "account": "T银行", "owner": "个人", "note": "我拿利润的50%（T账户）"}, {"name": "MK保洁物料", "ratio": 0.4, "account": "M银行", "owner": "个人", "note": "我拿利润的40%"}, {"name": "Stallion人员短缺", "ratio": 0.4, "account": "M银行", "owner": "个人", "note": "我拿利润的40%"}], "records": [{"month": "历史累计(截至2026.05)", "isBaseline": true, "project": "绿植", "revenue": 4882796.0, "cost": 3068272.0, "ratio": 0.75, "note": ""}, {"month": "历史累计(截至2026.05)", "isBaseline": true, "project": "消杀", "revenue": 1298000.0, "cost": 596703.0, "ratio": 0.75, "note": ""}, {"month": "历史累计(截至2026.05)", "isBaseline": true, "project": "保洁人力", "revenue": 161084.0, "cost": 72274.0, "ratio": 0.75, "note": ""}, {"month": "历史累计(截至2026.05)", "isBaseline": true, "project": "消防员", "revenue": 235897.0, "cost": 215314.0, "ratio": 0.75, "note": ""}, {"month": "历史累计(截至2026.05)", "isBaseline": true, "project": "F1", "revenue": 5124050.0, "cost": 2560492.0, "ratio": 0.25, "note": ""}, {"month": "历史累计(截至2026.05)", "isBaseline": true, "project": "MK现金", "revenue": 377531.0, "cost": 349566.0, "ratio": 0.75, "note": ""}, {"month": "2026-06", "isBaseline": false, "project": "绿植", "revenue": 420350.0, "cost": 228573.0, "ratio": 0.75, "note": ""}, {"month": "2026-06", "isBaseline": false, "project": "消杀", "revenue": 128800.0, "cost": 45654.0, "ratio": 0.75, "note": ""}, {"month": "2026-06", "isBaseline": false, "project": "保洁人力", "revenue": 161084.0, "cost": 93574.0, "ratio": 0.75, "note": ""}, {"month": "2026-06", "isBaseline": false, "project": "消防员", "revenue": 33262.0, "cost": 26816.0, "ratio": 0.75, "note": ""}, {"month": "2026-06", "isBaseline": false, "project": "F1", "revenue": 184410.0, "cost": 77620.0, "ratio": 0.25, "note": ""}], "withdrawals": [{"month": "2025-09", "account": "I银行", "amount": 262500, "note": "2025-09-12 取现"}, {"month": "2025-11", "account": "I银行", "amount": 375000, "note": "2025-11-06 取现"}, {"month": "2026-06", "account": "I银行", "amount": 150000, "note": "2026-06-17"}, {"month": "2026-05", "account": "I银行", "amount": 75000, "note": "2026-05-26"}, {"month": "2026-05", "account": "I银行", "amount": 100000, "note": "2026-05-11"}, {"month": "2026-04", "account": "I银行", "amount": 200000, "note": "2026-04-19"}, {"month": "2026-04", "account": "I银行", "amount": 100000, "note": "2026-04-06"}, {"month": "2026-03", "account": "I银行", "amount": 500000, "note": "2026-03-23"}, {"month": "2026-03", "account": "I银行", "amount": 50000, "note": "2026-03-21"}]};
+
+/* ---------- utils ---------- */
+const $ = s => document.querySelector(s);
+const $$ = s => document.querySelectorAll(s);
+function esc(s){ return String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+function fmt(n){ n=n||0; return '¥'+ n.toLocaleString('zh-CN',{maximumFractionDigits:2,minimumFractionDigits:0}); }
+function fmtShort(n){ n=n||0; const a=Math.abs(n); if(a>=10000) return (n/10000).toFixed(a>=100000?0:1)+'万'; return n.toLocaleString('zh-CN'); }
+function ratioPct(r){ return r==null?'—':(r*100).toFixed(r*100%1?1:0)+'%'; }
+function niceMax(v){ if(v<=0)return 1; const p=Math.pow(10,Math.floor(Math.log10(v))); const f=v/p; let nf; if(f<=1)nf=1;else if(f<=2)nf=2;else if(f<=2.5)nf=2.5;else if(f<=5)nf=5;else nf=10; return nf*p; }
+const PAL=['#2563eb','#16a34a','#d97706','#0d9488','#db2777','#7c3aed','#0891b2','#ca8a04','#dc2626','#475569'];
+
+/* ---------- state ---------- */
+const KEY='fuye_v2';
+let pendingSeedUpdate = null;   // 种子更新合并后用于提示横幅
+let appStarted = false;         // 防止页面加载时的 save() 触发自动下载
+let state = load();
+function load(){
+  const seed = JSON.parse(JSON.stringify(SEED));
+  const seedVer = seed.version || 1;
+  let stored = null;
+  try{ const raw=localStorage.getItem(KEY); if(raw){ const d=JSON.parse(raw); if(d&&d.projects) stored = d; } }catch(e){}
+  if(!stored) return seed;                       // 首次使用：直接用种子
+  const storedVer = stored.version || 1;
+
+  // 一次性迁移：旧 localStorage 里 人员工资挂靠 若还是 未开户，更新为 T银行
+  const seedRy = seed.projects.find(p=>p.name==='人员工资挂靠');
+  const storedRy = stored.projects.find(p=>p.name==='人员工资挂靠');
+  if(seedRy && storedRy && storedRy.account==='未开户'){
+    storedRy.account = seedRy.account;
+    storedRy.owner = seedRy.owner || storedRy.owner;
+  }
+  // 兜底：旧数据无 autoBackup 字段时默认开启自动备份
+  if(stored.autoBackup===undefined) stored.autoBackup = true;
+
+  // 种子版本更新时，以用户数据(stored)为准，种子仅补充缺失项
+  if(storedVer < seedVer){
+    const added = mergeSeed(stored, seed);
+    stored.version = seedVer;
+    pendingSeedUpdate = { from: storedVer, to: seedVer, added };
+  }
+
+  // v3 迁移：人员工资挂靠 所有已有记录的分成比例，统一同步为项目当前比例
+  // （早期按 100% 录入的历史记录，改项目默认比例后不会自动变，故在此一次性修正）
+  if(storedVer < 3){
+    const ry = stored.projects.find(p=>p.name==='人员工资挂靠');
+    if(ry){ stored.records.forEach(r=>{ if(r.project==='人员工资挂靠') r.ratio = ry.ratio; }); }
+  }
+
+  try{ localStorage.setItem(KEY, JSON.stringify(stored)); }catch(e){}
+  return stored;
+}
+// 合并策略：stored 优先去重，种子里 stored 没有的项补入
+function mergeSeed(stored, seed){
+  const added = {projects:0, records:0, withdrawals:0};
+  const pset = {}; stored.projects.forEach(p=>pset[p.name]=true);
+  seed.projects.forEach(p=>{ if(!pset[p.name]){ stored.projects.push(p); added.projects++; } });
+  const rset = {}; stored.records.forEach(r=>rset[r.month+'||'+r.project]=true);
+  seed.records.forEach(r=>{ const k=r.month+'||'+r.project; if(!rset[k]){ stored.records.push(r); added.records++; } });
+  const wset = {}; stored.withdrawals.forEach(w=>wset[w.month+'||'+w.account+'||'+w.amount]=true);
+  seed.withdrawals.forEach(w=>{ const k=w.month+'||'+w.account+'||'+w.amount; if(!wset[k]){ stored.withdrawals.push(w); added.withdrawals++; } });
+  return added;
+}
+function save(){
+  try{ localStorage.setItem(KEY, JSON.stringify(state)); }catch(e){}
+  const t=new Date();
+  $('#lastSave').textContent = '已保存 '+t.toLocaleString('zh-CN');
+  // 用户实际操作后才自动备份（appStarted 由 init 末尾置 true，避免加载时误触发）
+  if(appStarted && state.autoBackup) autoBackupDownload();
+}
+function myProfit(r){ return (r.revenue - r.cost) * (r.ratio||0); }
+function profit(r){ return r.revenue - r.cost; }
+
+/* ---------- aggregations ---------- */
+function realMonths(){ const s=new Set(); state.records.forEach(r=>{ if(!r.isBaseline) s.add(r.month); }); return [...s].sort(); }
+function getAccounts(){
+  const set=[];
+  state.projects.forEach(p=>{ if(p.account && !set.includes(p.account)) set.push(p.account); });
+  state.withdrawals.forEach(w=>{ if(w.account && !set.includes(w.account)) set.push(w.account); });
+  const pref=['I银行','R银行','M银行','T银行','未开户'];
+  set.sort((a,b)=>{ let ia=pref.indexOf(a),ib=pref.indexOf(b); if(ia<0)ia=99; if(ib<0)ib=99; return ia-ib; });
+  return set;
+}
+function projByName(n){ return state.projects.find(p=>p.name===n); }
+function filterRecs(month){
+  if(month==='all'||!month) return state.records;
+  return state.records.filter(r=>r.month===month);
+}
+function byProject(month){
+  const recs=filterRecs(month);
+  return state.projects.map(p=>{
+    const rs=recs.filter(r=>r.project===p.name);
+    const rev=rs.reduce((s,r)=>s+r.revenue,0);
+    const cost=rs.reduce((s,r)=>s+r.cost,0);
+    const mp=rs.reduce((s,r)=>s+myProfit(r),0);
+    return {...p, rev, cost, profit:rev-cost, myProfit:mp};
+  }).sort((a,b)=>b.myProfit-a.myProfit);
+}
+function byAccount(){
+  const accts=getAccounts();
+  const wdByAcct={}; state.withdrawals.forEach(w=>{ wdByAcct[w.account]=(wdByAcct[w.account]||0)+w.amount; });
+  return accts.map(a=>{
+    const pros=state.projects.filter(p=>p.account===a).map(p=>p.name);
+    const rs=state.records.filter(r=>pros.includes(r.project));
+    const should=rs.reduce((s,r)=>s+myProfit(r),0);
+    const wd=wdByAcct[a]||0;
+    const bankLeft=should-wd;
+    return {account:a, projects:pros, should, wd, bankLeft, cash:wd};
+  });
+}
+function trend(){
+  const months=realMonths();
+  const mp=months.map(m=> state.records.filter(r=>r.month===m).reduce((s,r)=>s+myProfit(r),0));
+  const rev=months.map(m=> state.records.filter(r=>r.month===m).reduce((s,r)=>s+r.revenue,0));
+  const cost=months.map(m=> state.records.filter(r=>r.month===m).reduce((s,r)=>s+r.cost,0));
+  const wd=months.map(m=> state.withdrawals.filter(w=>w.month===m).reduce((s,w)=>s+w.amount,0));
+  return {months, mp, rev, cost, wd};
+}
+
+/* ---------- charts ---------- */
+function barH(el, items, opts){
+  opts=opts||{};
+  const W=720, rowH=40, padL=150, padR=110, padT=8, padB=8;
+  const H=padT+padB+items.length*rowH;
+  const max=Math.max(...items.map(d=>Math.abs(d.value)),1);
+  let svg=`<svg viewBox="0 0 ${W} ${H}" width="100%" xmlns="http://www.w3.org/2000/svg" font-family="sans-serif">`;
+  items.forEach((d,i)=>{
+    const y=padT+i*rowH;
+    const bw=Math.max(0,(Math.abs(d.value)/max)*(W-padL-padR));
+    const color=d.color||'#2563eb';
+    svg+=`<text x="8" y="${y+rowH/2+4}" font-size="13" fill="#334155">${esc(d.label)}</text>`;
+    svg+=`<rect x="${padL}" y="${y+7}" width="${bw}" height="${rowH-16}" rx="5" fill="${color}"/>`;
+    svg+=`<text x="${padL+bw+7}" y="${y+rowH/2+4}" font-size="12.5" fill="#475569" font-weight="600">${opts.fmt?opts.fmt(d.value):d.value}</text>`;
+  });
+  svg+=`</svg>`;
+  el.innerHTML=svg;
+}
+function donut(el, items, opts){
+  opts=opts||{};
+  const size=230, r=92, cx=size/2, cy=size/2, sw=36;
+  const total=items.reduce((s,d)=>s+Math.max(0,d.value),0);
+  let a0=-Math.PI/2;
+  let svg=`<svg viewBox="0 0 ${size} ${size}" width="100%" style="max-width:260px;display:block;margin:0 auto" xmlns="http://www.w3.org/2000/svg">`;
+  if(total<=0){ svg+=`<circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="#e5e7eb" stroke-width="${sw}"/>`; }
+  items.forEach(d=>{
+    const frac=Math.max(0,d.value)/total;
+    const a1=a0+frac*Math.PI*2;
+    const large=(a1-a0)>Math.PI?1:0;
+    const x0=cx+r*Math.cos(a0), y0=cy+r*Math.sin(a0);
+    const x1=cx+r*Math.cos(a1), y1=cy+r*Math.sin(a1);
+    svg+=`<path d="M ${x0.toFixed(2)} ${y0.toFixed(2)} A ${r} ${r} 0 ${large} 1 ${x1.toFixed(2)} ${y1.toFixed(2)}" fill="none" stroke="${d.color}" stroke-width="${sw}"/>`;
+    a0=a1;
+  });
+  svg+=`<text x="${cx}" y="${cy-4}" text-anchor="middle" font-size="12" fill="#64748b">${opts.centerLabel||'合计'}</text>`;
+  svg+=`<text x="${cx}" y="${cy+16}" text-anchor="middle" font-size="16" font-weight="800" fill="#0f172a">${opts.fmt?opts.fmt(total):total}</text>`;
+  svg+=`</svg>`;
+  let leg=`<div class="legend">`;
+  items.forEach(d=>{ leg+=`<div class="legend-item"><span class="dot" style="background:${d.color}"></span>${esc(d.label)} <b>${opts.fmt?opts.fmt(d.value):d.value}</b></div>`; });
+  leg+=`</div>`;
+  el.innerHTML=svg+leg;
+}
+function lineChart(el, opts){
+  const {labels, series}=opts;
+  const W=720,H=320,padL=64,padR=20,padT=18,padB=42;
+  const iw=W-padL-padR, ih=H-padT-padB;
+  const all=series.flatMap(s=>s.values);
+  const ymax=niceMax(Math.max(...all,1));
+  let svg=`<svg viewBox="0 0 ${W} ${H}" width="100%" xmlns="http://www.w3.org/2000/svg" font-family="sans-serif">`;
+  const ticks=4;
+  for(let i=0;i<=ticks;i++){
+    const v=ymax*i/ticks, y=padT+ih-(v/ymax)*ih;
+    svg+=`<line x1="${padL}" y1="${y}" x2="${W-padR}" y2="${y}" stroke="#eef2f7"/>`;
+    svg+=`<text x="${padL-8}" y="${y+4}" text-anchor="end" font-size="11" fill="#94a3b8">${fmtShort(v)}</text>`;
+  }
+  const n=labels.length;
+  const x=i=>(n<=1)?padL+iw/2:padL+(i/(n-1))*iw;
+  labels.forEach((lb,i)=>{ svg+=`<text x="${x(i)}" y="${H-padB+18}" text-anchor="middle" font-size="11" fill="#64748b">${esc(lb)}</text>`; });
+  series.forEach(s=>{
+    const pts=s.values.map((v,i)=>`${x(i).toFixed(1)},${(padT+ih-(v/ymax)*ih).toFixed(1)}`).join(' ');
+    svg+=`<polyline points="${pts}" fill="none" stroke="${s.color}" stroke-width="2.6"/>`;
+    s.values.forEach((v,i)=>{ svg+=`<circle cx="${x(i).toFixed(1)}" cy="${(padT+ih-(v/ymax)*ih).toFixed(1)}" r="3.2" fill="${s.color}"/>`; });
+  });
+  svg+=`</svg>`;
+  let leg=`<div class="legend">`; series.forEach(s=>leg+=`<div class="legend-item"><span class="dot" style="background:${s.color}"></span>${esc(s.name)}</div>`);
+  leg+=`</div>`;
+  el.innerHTML=svg+leg;
+}
+
+/* ---------- render ---------- */
+function curMonth(){ return $('#monthFilter').value; }
+function renderMonthFilter(){
+  const sel=$('#monthFilter'); const months=realMonths();
+  const cur=sel.value;
+  sel.innerHTML='<option value="all">全部（累计）</option>'+months.map(m=>`<option value="${m}">${m}</option>`).join('');
+  if(cur && (cur==='all'||months.includes(cur))) sel.value=cur; else sel.value='all';
+}
+function renderKPIs(){
+  const m=curMonth();
+  const totalAll=state.records.reduce((s,r)=>s+myProfit(r),0);
+  const months=realMonths();
+  const latest=months[months.length-1]||'';
+  const monthMp = (m==='all')
+    ? state.records.filter(r=>!r.isBaseline).reduce((s,r)=>s+myProfit(r),0)
+    : state.records.filter(r=>r.month===m).reduce((s,r)=>s+myProfit(r),0);
+  const accts=byAccount();
+  const totalWd=accts.reduce((s,a)=>s+a.wd,0);
+  const totalBank=accts.reduce((s,a)=>s+a.bankLeft,0);
+  const label = m==='all' ? '累计月度我的利润' : (m+' 我的利润');
+  const k=[
+    {t:'累计我的利润（含期初）',v:fmt(totalAll),c:'green',s:'期初基数 + 各月'},
+    {t:label,v:fmt(monthMp),c:'blue',s:m==='all'?'所有真实月份合计':m},
+    {t:'累计取现',v:fmt(totalWd),c:'amber',s:'从各账户取出现金'},
+    {t:'银行留存合计',v:fmt(totalBank),c:totalBank<0?'red':'green',s:'应得 − 取现'},
+  ];
+  $('#kpis').innerHTML=k.map(x=>`<div class="card kpi"><div class="t">${x.t}</div><div class="v ${x.c}">${x.v}</div><div class="s">${x.s}</div></div>`).join('');
+}
+function renderOverview(){
+  renderKPIs();
+  const m=curMonth();
+  const bp=byProject('all');
+  const items=bp.filter(p=>p.myProfit>0).map((p,i)=>({label:p.name, value:p.myProfit, color:PAL[i%PAL.length]}));
+  donut($('#ovDonut'), byAccount().filter(a=>a.should>0).map((a,i)=>({label:a.account,value:a.should,color:PAL[i%PAL.length]})), {centerLabel:'应得合计',fmt:fmt});
+  barH($('#ovBars'), items, {fmt:fmt});
+  // account summary table
+  const accts=byAccount();
+  let rows=accts.map(a=>{
+    const warn=a.bankLeft<0?'<span class="tag pend">留存为负</span>':'';
+    return `<tr><td>${esc(a.account)}</td><td>${a.projects.length}个</td><td>${fmt(a.should)}</td><td>${fmt(a.wd)}</td><td>${fmt(a.bankLeft)} ${warn}</td></tr>`;
+  }).join('');
+  const tShould=accts.reduce((s,a)=>s+a.should,0), tWd=accts.reduce((s,a)=>s+a.wd,0), tBank=accts.reduce((s,a)=>s+a.bankLeft,0);
+  $('#ovAcctTable').innerHTML=`<table><thead><tr><th>账户</th><th>副业数</th><th>应得(已入账)</th><th>取现</th><th>银行留存</th></tr></thead><tbody>${rows}<tr style="font-weight:800"><td>合计</td><td></td><td>${fmt(tShould)}</td><td>${fmt(tWd)}</td><td>${fmt(tBank)}</td></tr></tbody></table>`;
+}
+function renderProject(){
+  const m=curMonth();
+  const bp=byProject(m);
+  $('#projSub').textContent = m==='all' ? '累计视角（含期初基数）' : ('仅 '+m+' 当月');
+  let rows=bp.map(p=>{
+    return `<tr><td>${esc(p.name)}</td><td>${ratioPct(p.ratio)}</td><td>${esc(p.account)}</td><td>${fmt(p.rev)}</td><td>${fmt(p.cost)}</td><td>${fmt(p.profit)}</td><td><b>${fmt(p.myProfit)}</b></td></tr>`;
+  }).join('');
+  $('#projTable').innerHTML=`<table><thead><tr><th>副业</th><th>分成</th><th>账户</th><th>收入</th><th>成本</th><th>利润</th><th>我的利润</th></tr></thead><tbody>${rows}</tbody></table>`;
+  const items=bp.filter(p=>p.myProfit>0||p.rev>0).map((p,i)=>({label:p.name, value:p.myProfit, color:PAL[i%PAL.length]}));
+  barH($('#projBars'), items.length?items:[{label:'(无数据)',value:0}], {fmt:fmt});
+  fillProjTrendSelect();
+  renderProjTrend();
+}
+// 单副业月度趋势：下拉框选项
+function fillProjTrendSelect(){
+  const sel=$('#projTrendSel');
+  if(!sel) return;
+  const cur=sel.value;
+  sel.innerHTML=state.projects.map(p=>`<option value="${esc(p.name)}">${esc(p.name)}</option>`).join('');
+  if(cur && state.projects.some(p=>p.name===cur)) sel.value=cur;
+  else if(state.projects.length) sel.value=state.projects[0].name;
+}
+// 单副业月度趋势：同一副业在不同月份的收入/成本/利润/我的利润 折线对比
+function renderProjTrend(){
+  const sel=$('#projTrendSel'); const el=$('#projTrendChart');
+  if(!sel||!el) return;
+  const name=sel.value;
+  if(!name){ el.innerHTML='<p class="sec-sub">请先添加副业。</p>'; return; }
+  const months=realMonths().filter(m=> state.records.some(r=>r.month===m && r.project===name));
+  if(months.length===0){ el.innerHTML='<p class="sec-sub">该副业暂无月度记录，录入后即可查看趋势。</p>'; return; }
+  const series=[];
+  const rev=months.map(m=> state.records.filter(r=>r.month===m&&r.project===name).reduce((s,r)=>s+r.revenue,0));
+  const cost=months.map(m=> state.records.filter(r=>r.month===m&&r.project===name).reduce((s,r)=>s+r.cost,0));
+  const profit=rev.map((v,i)=>v-cost[i]);
+  const mp=months.map(m=> state.records.filter(r=>r.month===m&&r.project===name).reduce((s,r)=>s+myProfit(r),0));
+  series.push({name:'收入',color:'#2563eb',values:rev});
+  series.push({name:'成本',color:'#dc2626',values:cost});
+  series.push({name:'利润',color:'#d97706',values:profit});
+  series.push({name:'我的利润',color:'#16a34a',values:mp});
+  lineChart(el, {labels:months, series});
+}
+function renderAccount(){
+  const accts=byAccount();
+  let rows=accts.map(a=>{
+    const warn=a.bankLeft<0?'<span class="tag pend">留存为负</span>':'';
+    return `<tr><td>${esc(a.account)}</td><td>${a.projects.join('、')||'—'}</td><td>${fmt(a.should)}</td><td>${fmt(a.wd)}</td><td><b>${fmt(a.bankLeft)}</b> ${warn}</td></tr>`;
+  }).join('');
+  $('#acctTable').innerHTML=`<table><thead><tr><th>账户</th><th>关联副业</th><th>应得(已入账)</th><th>取现</th><th>银行留存</th></tr></thead><tbody>${rows}</tbody></table>`;
+  const items=accts.map((a,i)=>({label:a.account, value:a.should, color:PAL[i%PAL.length]}));
+  barH($('#acctBars'), items, {fmt:fmt});
+}
+function renderTrend(){
+  const t=trend();
+  if(t.months.length===0){ $('#trendLine').innerHTML='<p class="sec-sub">暂无月度数据</p>'; }
+  else{
+    lineChart($('#trendLine'), {labels:t.months, series:[
+      {name:'我的利润',color:'#16a34a',values:t.mp},
+      {name:'收入',color:'#2563eb',values:t.rev},
+      {name:'成本',color:'#dc2626',values:t.cost},
+    ]});
+  }
+  const wdItems=t.months.map((m,i)=>({label:m, value:t.wd[i], color:'#d97706'}));
+  barH($('#wdBars'), wdItems.some(d=>d.value>0)?wdItems:[{label:'(暂无取现记录)',value:0}], {fmt:fmt});
+}
+function renderAll(){
+  renderMonthFilter();
+  renderOverview();
+  renderProject();
+  renderAccount();
+  renderTrend();
+  $('#recCount').textContent = `记录 ${state.records.length} 条 · 取现 ${state.withdrawals.length} 条 · 副业 ${state.projects.length} 个`;
+}
+
+/* ---------- forms ---------- */
+function fillProjectSelect(){
+  const sel=$('#recProject'); const cur=sel.value;
+  sel.innerHTML=state.projects.map(p=>`<option value="${esc(p.name)}">${esc(p.name)}（${ratioPct(p.ratio)}·${esc(p.account)}）</option>`).join('');
+  if(cur) sel.value=cur;
+}
+function fillAccountSelect(){
+  const sel=$('#wdAccount'); const cur=sel.value;
+  sel.innerHTML=getAccounts().map(a=>`<option value="${esc(a)}">${esc(a)}</option>`).join('');
+  if(cur) sel.value=cur;
+}
+function renderWdList(){
+  const w=state.withdrawals.map((x,origIdx)=>({...x,origIdx})).sort((a,b)=>a.month<b.month?1:-1);
+  if(!w.length){ $('#wdList').innerHTML='<p class="sec-sub">尚未登记取现。</p>'; return; }
+  $('#wdList').innerHTML='<table><thead><tr><th>月份</th><th>账户</th><th>金额</th><th>备注</th><th></th></tr></thead><tbody>'+
+    w.map(x=>`<tr><td>${esc(x.month)}</td><td>${esc(x.account)}</td><td>${fmt(x.amount)}</td><td>${esc(x.note||'')}</td><td><button class="ghost" onclick="delWd(${x.origIdx})">删除</button></td></tr>`).join('')+'</tbody></table>';
+}
+function delWd(i){ state.withdrawals.splice(i,1); save(); renderAll(); renderWdList(); $('#wdMsg').innerHTML='<span class="ok">已删除</span>'; }
+function renderRecList(){
+  const w=state.records.map((x,origIdx)=>({...x,origIdx})).filter(r=>!r.isBaseline).sort((a,b)=>a.month<b.month?1:-1);
+  if(!w.length){ $('#recList').innerHTML='<p class="sec-sub">尚未登记月度经营。</p>'; return; }
+  $('#recList').innerHTML='<table><thead><tr><th>月份</th><th>副业</th><th>收入</th><th>成本</th><th>我的利润</th><th>备注</th><th></th></tr></thead><tbody>'+
+    w.map(x=>`<tr><td>${esc(x.month)}</td><td>${esc(x.project)}</td><td>${fmt(x.revenue)}</td><td>${fmt(x.cost)}</td><td>${fmt((x.revenue-x.cost)*x.ratio)}</td><td>${esc(x.note||'')}</td><td><button class="ghost" onclick="delRec(${x.origIdx})">删除</button></td></tr>`).join('')+'</tbody></table>';
+}
+function delRec(i){ state.records.splice(i,1); save(); renderAll(); renderRecList(); $('#recMsg').innerHTML='<span class="ok">已删除</span>'; }
+
+$('#recForm').addEventListener('submit',e=>{
+  e.preventDefault();
+  const month=$('#recMonth').value, project=$('#recProject').value;
+  const rev=parseFloat($('#recRev').value)||0, cost=parseFloat($('#recCost').value)||0;
+  const note=$('#recNote').value.trim();
+  const p=projByName(project); const ratio=p?p.ratio:0;
+  const ex=state.records.find(r=>!r.isBaseline && r.month===month && r.project===project);
+  if(ex){ ex.revenue=rev; ex.cost=cost; ex.ratio=ratio; ex.note=note; }
+  else state.records.push({month,isBaseline:false,project,revenue:rev,cost:cost,ratio,note});
+  save(); renderAll(); renderRecList();
+  $('#recMsg').innerHTML=`<span class="ok">已保存 ${month} · ${esc(project)}，我的利润 ${fmt((rev-cost)*ratio)}</span>`;
+});
+$('#wdForm').addEventListener('submit',e=>{
+  e.preventDefault();
+  const month=$('#wdMonth').value, account=$('#wdAccount').value;
+  const amt=parseFloat($('#wdAmt').value)||0; const note=$('#wdNote').value.trim();
+  state.withdrawals.push({month,account,amount:amt,note});
+  save(); renderAll(); renderWdList();
+  $('#wdMsg').innerHTML=`<span class="ok">已登记 ${month} · ${esc(account)} 取现 ${fmt(amt)}</span>`;
+  $('#wdAmt').value=''; $('#wdNote').value='';
+});
+
+/* manage */
+function renderManage(){
+  const html=state.projects.map((p,i)=>`
+    <tr>
+      <td>${esc(p.name)}</td>
+      <td><input type="number" step="0.1" data-i="${i}" class="mp-ratio" value="${(p.ratio*100)}" style="width:80px">%</td>
+      <td><input type="text" data-i="${i}" class="mp-account" value="${esc(p.account)}" style="width:110px"></td>
+      <td><input type="text" data-i="${i}" class="mp-owner" value="${esc(p.owner)}" style="width:80px"></td>
+      <td><input type="text" data-i="${i}" class="mp-note" value="${esc(p.note||'')}" style="width:160px"></td>
+      <td><button class="ghost" onclick="delProj(${i})">删除</button></td>
+    </tr>`).join('');
+  $('#manageTable').innerHTML=`<table><thead><tr><th>副业</th><th>分成比例</th><th>账户</th><th>归属</th><th>备注</th><th></th></tr></thead><tbody>${html}</tbody></table>`;
+}
+function delProj(i){
+  if(!confirm('确定删除该副业？其历史记录仍保留，仅不再出现在管理列表。')) return;
+  state.projects.splice(i,1); save(); renderManage(); renderAll();
+}
+$('#saveProj').addEventListener('click',()=>{
+  $$('.mp-ratio').forEach(el=>{ const i=+el.dataset.i; state.projects[i].ratio=parseFloat(el.value)/100; });
+  $$('.mp-account').forEach(el=>{ const i=+el.dataset.i; state.projects[i].account=el.value.trim(); });
+  $$('.mp-owner').forEach(el=>{ const i=+el.dataset.i; state.projects[i].owner=el.value.trim(); });
+  $$('.mp-note').forEach(el=>{ const i=+el.dataset.i; state.projects[i].note=el.value; });
+  save(); renderAll(); fillProjectSelect(); fillAccountSelect();
+  $('#backupMsg').innerHTML=''; alert('已保存副业设置');
+});
+$('#newProjForm').addEventListener('submit',e=>{
+  e.preventDefault();
+  const name=$('#npName').value.trim();
+  if(state.projects.find(p=>p.name===name)){ alert('副业已存在'); return; }
+  state.projects.push({name, ratio:parseFloat($('#npRatio').value)/100, account:$('#npAccount').value.trim(), owner:$('#npOwner').value.trim(), note:$('#npNote').value.trim()});
+  save(); renderManage(); renderAll(); fillProjectSelect(); fillAccountSelect();
+  e.target.reset(); $('#npOwner').value='个人';
+});
+
+/* backup */
+function download(name, content, type){
+  const blob=new Blob([content],{type:type||'application/json'});
+  const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=name; a.click();
+  setTimeout(()=>URL.revokeObjectURL(a.href),1000);
+}
+// 自动备份：每次改动后下载一份带时间戳的 JSON，避免覆盖、保留历史
+function autoBackupDownload(){
+  const d=new Date();
+  const p=n=>String(n).padStart(2,'0');
+  const stamp = d.getFullYear()+p(d.getMonth()+1)+p(d.getDate())+'-'+p(d.getHours())+p(d.getMinutes())+p(d.getSeconds());
+  download('副业数据自动备份-'+stamp+'.json', JSON.stringify(state,null,2));
+  $('#backupMsg').innerHTML='<span class="ok">已自动备份 JSON（'+stamp+'）</span>';
+}
+$('#btnExportJson').addEventListener('click',()=>{ download('副业数据备份.json', JSON.stringify(state,null,2)); $('#backupMsg').innerHTML='<span class="ok">已导出 JSON</span>'; });
+$('#btnExportCsv').addEventListener('click',()=>{
+  const head=['月份','副业','收入','成本','利润','分成比例','我的利润','银行账户','备注'];
+  const lines=[head.join(',')];
+  state.records.forEach(r=>{
+    const p=projByName(r.project);
+    const mp=myProfit(r);
+    lines.push([r.month, r.project, r.revenue, r.cost, profit(r), (r.ratio||0), mp.toFixed(2), p?p.account:'', (r.note||'').replace(/,/g,' ')].join(','));
+  });
+  download('副业月度记录.csv', '﻿'+lines.join('\n'), 'text/csv'); $('#backupMsg').innerHTML='<span class="ok">已导出 CSV</span>';
+});
+$('#fileJson').addEventListener('change',e=>{
+  const f=e.target.files[0]; if(!f) return;
+  const rd=new FileReader();
+  rd.onload=()=>{ try{ const d=JSON.parse(rd.result); if(!d.projects||!d.records){ alert('文件格式不正确'); return; } if(!confirm('导入将覆盖当前数据，确定？建议先导出备份。')) return; state=d; save(); renderAll(); renderManage(); fillProjectSelect(); fillAccountSelect(); renderWdList(); renderRecList(); $('#backupMsg').innerHTML='<span class="ok">已导入</span>'; }catch(err){ alert('解析失败：'+err.message); } };
+  rd.readAsText(f);
+});
+$('#btnReset').addEventListener('click',()=>{
+  if(!confirm('恢复初始示例数据将丢失你录入的所有内容，确定？')) return;
+  state=JSON.parse(JSON.stringify(SEED)); save(); renderAll(); renderManage(); fillProjectSelect(); fillAccountSelect(); renderWdList(); renderRecList();
+  $('#backupMsg').innerHTML='<span class="ok">已恢复初始示例数据</span>';
+});
+// 自动备份开关
+$('#autoBackupToggle').addEventListener('change',e=>{
+  state.autoBackup = e.target.checked;
+  save();   // 切换本身也会触发自动备份（确认下载可用）
+  $('#backupMsg').innerHTML='<span class="ok">自动备份已'+(e.target.checked?'开启':'关闭')+'</span>';
+});
+
+/* ---------- nav ---------- */
+function showTab(name){
+  $$('#nav button').forEach(b=>b.classList.toggle('active', b.dataset.tab===name));
+  ['overview','project','account','trend','entry','manage','backup','help'].forEach(t=>{
+    $('#tab-'+t).classList.toggle('hide', t!==name);
+  });
+  if(name==='entry'){ renderWdList(); renderRecList(); }
+  if(name==='manage'){ renderManage(); }
+}
+$$('#nav button').forEach(b=> b.addEventListener('click',()=>showTab(b.dataset.tab)) );
+$('#monthFilter').addEventListener('change',()=>{ renderOverview(); renderProject(); });
+$('#projTrendSel').addEventListener('change',()=>{ renderProjTrend(); });
+
+/* ---------- init ---------- */
+function init(){
+  $('#recMonth').value='2026-07';
+  $('#wdMonth').value='2026-07';
+  fillProjectSelect(); fillAccountSelect(); renderManage(); renderWdList(); renderRecList(); renderAll();
+  showSeedBanner();
+  $('#autoBackupToggle').checked = !!state.autoBackup;   // 还原开关状态
+  save();
+  appStarted = true;   // 此后所有 save() 才会触发自动下载
+}
+function showSeedBanner(){
+  if(!pendingSeedUpdate) return;
+  const u = pendingSeedUpdate;
+  const parts = [];
+  if(u.added.projects) parts.push('副业 '+u.added.projects+' 个');
+  if(u.added.records) parts.push('收支记录 '+u.added.records+' 条');
+  if(u.added.withdrawals) parts.push('取现 '+u.added.withdrawals+' 条');
+  const detail = parts.length ? ('已为你合并新增：'+parts.join('、')) : '已更新';
+  const el = $('#seedBanner');
+  el.innerHTML = '🔔 数据模板已更新 v'+u.from+' → v'+u.to+'，'+detail+'（你的原有数据全部保留）。 <button id="seedBannerClose">知道了</button>';
+  el.style.display = 'flex';
+  $('#seedBannerClose').onclick = ()=>{ el.style.display='none'; };
+}
+init();
+window.delWd=delWd; window.delProj=delProj; window.delRec=delRec;
+</script>
+</body>
+</html>
